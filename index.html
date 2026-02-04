@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Will You Be My Valentine?</title>
     <style>
         * {
@@ -10,6 +10,7 @@
             padding: 0;
             box-sizing: border-box;
             font-family: Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
@@ -19,22 +20,23 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            touch-action: manipulation;
         }
         
         .container {
             width: 100%;
-            max-width: 500px;
+            max-width: 450px;
             background: white;
             border-radius: 20px;
-            padding: 40px 30px;
+            padding: 30px 25px;
             text-align: center;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
         }
         
         .question {
-            font-size: 28px;
+            font-size: 24px;
             color: #333;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             font-weight: bold;
             line-height: 1.3;
         }
@@ -45,11 +47,8 @@
         
         .buttons-container {
             position: relative;
-            height: 180px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            height: 140px;
+            margin-bottom: 25px;
             overflow: hidden;
             border: 2px dashed #ff9a9e;
             border-radius: 15px;
@@ -57,14 +56,17 @@
         }
         
         .btn {
-            padding: 20px 60px;
-            font-size: 24px;
+            padding: 14px 35px;
+            font-size: 18px;
             font-weight: bold;
             border: none;
-            border-radius: 15px;
+            border-radius: 10px;
             cursor: pointer;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
         }
         
         .btn-yes {
@@ -77,7 +79,7 @@
             z-index: 10;
         }
         
-        .btn-yes:hover {
+        .btn-yes:active, .btn-yes:hover {
             background: #45a049;
             transform: translateY(-50%) scale(1.05);
         }
@@ -86,25 +88,30 @@
             background: #f44336;
             color: white;
             position: absolute;
-            /* NO TRANSITION - INSTANT MOVEMENT */
-            transition: none !important;
+            transition: left 0.3s ease, top 0.3s ease;
             z-index: 5;
+        }
+        
+        .btn-no:active {
+            background: #d32f2f;
         }
         
         .comment {
             color: #666;
-            font-size: 18px;
+            font-size: 16px;
             font-style: italic;
-            margin-top: 20px;
-            min-height: 30px;
+            margin-top: 15px;
+            min-height: 25px;
+            padding: 0 10px;
         }
         
         .result {
-            font-size: 24px;
+            font-size: 20px;
             color: #4CAF50;
             font-weight: bold;
             margin-top: 10px;
-            min-height: 40px;
+            min-height: 35px;
+            padding: 0 10px;
         }
         
         .heart {
@@ -121,15 +128,63 @@
             20% { transform: scale(1); }
         }
         
-        .sensitivity-indicator {
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(255, 107, 139, 0.1);
-            pointer-events: none;
-            z-index: 2;
+        .mobile-instruction {
             display: none;
+            color: #666;
+            font-size: 14px;
+            margin-top: 15px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px 20px;
+            }
+            
+            .question {
+                font-size: 22px;
+                margin-bottom: 25px;
+            }
+            
+            .buttons-container {
+                height: 120px;
+            }
+            
+            .btn {
+                padding: 12px 30px;
+                font-size: 16px;
+            }
+            
+            .btn-yes {
+                left: 15px;
+            }
+            
+            .mobile-instruction {
+                display: block;
+            }
+            
+            .comment {
+                font-size: 15px;
+            }
+            
+            .result {
+                font-size: 18px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .btn {
+                padding: 10px 25px;
+                font-size: 16px;
+            }
+            
+            .buttons-container {
+                height: 110px;
+            }
+            
+            .question {
+                font-size: 20px;
+            }
         }
     </style>
 </head>
@@ -140,10 +195,11 @@
         </div>
         
         <div class="buttons-container" id="buttonsContainer">
-            <div class="sensitivity-indicator" id="sensitivityIndicator"></div>
             <button class="btn btn-yes" id="yesBtn">Yes</button>
             <button class="btn btn-no" id="noBtn">No</button>
         </div>
+        
+        <div class="mobile-instruction">Try to tap "No" - it's shy! 😉</div>
         
         <div class="comment" id="comment">
             "No" seems a bit shy 😁
@@ -159,12 +215,23 @@
             const comment = document.getElementById('comment');
             const result = document.getElementById('result');
             const buttonsContainer = document.getElementById('buttonsContainer');
-            const sensitivityIndicator = document.getElementById('sensitivityIndicator');
+            
+            // Check if mobile device
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             
             // Get container dimensions
-            const containerRect = buttonsContainer.getBoundingClientRect();
-            const btnWidth = noBtn.offsetWidth;
-            const btnHeight = noBtn.offsetHeight;
+            let containerRect = buttonsContainer.getBoundingClientRect();
+            let btnWidth = noBtn.offsetWidth;
+            let btnHeight = noBtn.offsetHeight;
+            
+            // Update dimensions on resize
+            function updateDimensions() {
+                containerRect = buttonsContainer.getBoundingClientRect();
+                btnWidth = noBtn.offsetWidth;
+                btnHeight = noBtn.offsetHeight;
+            }
+            
+            window.addEventListener('resize', updateDimensions);
             
             // Calculate movement boundaries
             const minX = 10;
@@ -178,34 +245,74 @@
             noBtn.style.left = `${currentX}px`;
             noBtn.style.top = `${currentY}px`;
             
-            // NO TRANSITION - INSTANT MOVEMENT
-            noBtn.style.transition = 'none';
+            // Track touch/mouse position
+            let lastX = 0;
+            let lastY = 0;
+            let isTouching = false;
             
-            // Track mouse position
-            let mouseX = 0;
-            let mouseY = 0;
-            
-            // Show sensitivity zone (for debugging)
-            let showSensitivity = false;
-            
-            // Update mouse position
-            buttonsContainer.addEventListener('mousemove', function(e) {
-                const rect = buttonsContainer.getBoundingClientRect();
-                mouseX = e.clientX - rect.left;
-                mouseY = e.clientY - rect.top;
+            // Function to move NO button
+            function moveNoButton(targetX, targetY) {
+                // Calculate direction away from touch/click
+                const btnCenterX = currentX + btnWidth/2;
+                const btnCenterY = currentY + btnHeight/2;
                 
-                // Update sensitivity indicator position
-                if (showSensitivity) {
-                    sensitivityIndicator.style.display = 'block';
-                    sensitivityIndicator.style.left = (mouseX - 60) + 'px';
-                    sensitivityIndicator.style.top = (mouseY - 60) + 'px';
+                // Vector from touch to button
+                const dx = btnCenterX - targetX;
+                const dy = btnCenterY - targetY;
+                
+                // Calculate distance
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Move less aggressively
+                const scale = distance > 0 ? 60 / distance : 1;
+                
+                // Calculate new position (run away from touch)
+                let newX = currentX + dx * scale * 1.8;
+                let newY = currentY + dy * scale * 1.8;
+                
+                // Add some randomness
+                newX += (Math.random() - 0.5) * 40;
+                newY += (Math.random() - 0.5) * 40;
+                
+                // Keep within boundaries
+                newX = Math.max(minX, Math.min(maxX, newX));
+                newY = Math.max(minY, Math.min(maxY, newY));
+                
+                // Ensure minimum movement
+                const moveDistance = Math.sqrt(
+                    Math.pow(newX - currentX, 2) + 
+                    Math.pow(newY - currentY, 2)
+                );
+                
+                if (moveDistance < 30) {
+                    // Force a bigger movement
+                    newX = minX + Math.random() * (maxX - minX);
+                    newY = minY + Math.random() * (maxY - minY);
                 }
                 
-                checkProximityAndMove();
-            });
+                // Update position with smooth transition
+                noBtn.style.left = `${newX}px`;
+                noBtn.style.top = `${newY}px`;
+                
+                // Update current position
+                currentX = newX;
+                currentY = newY;
+                
+                // Add visual feedback
+                noBtn.style.backgroundColor = '#ff5555';
+                setTimeout(() => {
+                    noBtn.style.backgroundColor = '#f44336';
+                }, 150);
+            }
             
-            // Fast proximity check and movement
-            function checkProximityAndMove() {
+            // ===== DESKTOP (Mouse) Events =====
+            buttonsContainer.addEventListener('mousemove', function(e) {
+                if (isTouching) return;
+                
+                const rect = buttonsContainer.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
                 // Calculate distance between mouse and button center
                 const btnCenterX = currentX + btnWidth/2;
                 const btnCenterY = currentY + btnHeight/2;
@@ -215,99 +322,109 @@
                     Math.pow(mouseY - btnCenterY, 2)
                 );
                 
-                // EXTREMELY SENSITIVE - Move if within 150px!
-                if (distance < 150) {
-                    moveNoButtonFast();
-                }
-            }
-            
-            // SUPER FAST movement function
-            function moveNoButtonFast() {
-                // Calculate direction away from mouse
-                const btnCenterX = currentX + btnWidth/2;
-                const btnCenterY = currentY + btnHeight/2;
-                
-                // Vector from mouse to button
-                const dx = btnCenterX - mouseX;
-                const dy = btnCenterY - mouseY;
-                
-                // Normalize and scale
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const scale = distance > 0 ? 80 / distance : 1;
-                
-                // Calculate new position (run away from mouse)
-                let newX = currentX + dx * scale * 2.5;
-                let newY = currentY + dy * scale * 2.5;
-                
-                // Add some randomness for unpredictability
-                newX += (Math.random() - 0.5) * 60;
-                newY += (Math.random() - 0.5) * 60;
-                
-                // Keep within boundaries
-                newX = Math.max(minX, Math.min(maxX, newX));
-                newY = Math.max(minY, Math.min(maxY, newY));
-                
-                // Ensure minimum movement (at least 40px)
-                const moveDistance = Math.sqrt(
-                    Math.pow(newX - currentX, 2) + 
-                    Math.pow(newY - currentY, 2)
-                );
-                
-                if (moveDistance < 40) {
-                    // Force a bigger movement
-                    newX = minX + Math.random() * (maxX - minX);
-                    newY = minY + Math.random() * (maxY - minY);
+                // Move if within 100px
+                if (distance < 100) {
+                    moveNoButton(mouseX, mouseY);
                 }
                 
-                // INSTANT POSITION UPDATE - NO TRANSITION
-                noBtn.style.left = `${newX}px`;
-                noBtn.style.top = `${newY}px`;
-                
-                // Update current position
-                currentX = newX;
-                currentY = newY;
-                
-                // Add visual feedback (color flash)
-                noBtn.style.backgroundColor = '#ff3333';
-                setTimeout(() => {
-                    noBtn.style.backgroundColor = '#f44336';
-                }, 50);
-            }
+                lastX = mouseX;
+                lastY = mouseY;
+            });
             
-            // Also move when hovering directly over button
+            // Also move on hover (desktop)
             noBtn.addEventListener('mouseenter', function(e) {
-                moveNoButtonFast();
-                // Move again quickly
-                setTimeout(moveNoButtonFast, 50);
+                if (isTouching) return;
+                const rect = buttonsContainer.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                moveNoButton(mouseX, mouseY);
             });
             
-            // Move on click attempt
-            noBtn.addEventListener('mousedown', function(e) {
-                e.preventDefault();
-                // Move multiple times very fast
-                moveNoButtonFast();
-                setTimeout(moveNoButtonFast, 30);
-                setTimeout(moveNoButtonFast, 60);
-                setTimeout(moveNoButtonFast, 90);
-            });
-            
-            // Mobile touch support
+            // ===== MOBILE (Touch) Events =====
+            // FOR NO BUTTON
             noBtn.addEventListener('touchstart', function(e) {
                 e.preventDefault();
-                moveNoButtonFast();
-                setTimeout(moveNoButtonFast, 30);
-                setTimeout(moveNoButtonFast, 60);
+                e.stopPropagation();
+                isTouching = true;
+                
+                const touch = e.touches[0];
+                const rect = buttonsContainer.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+                
+                // Immediately move away on touch
+                moveNoButton(touchX, touchY);
+                
+                lastX = touchX;
+                lastY = touchY;
             });
             
-            // Continuous checking for maximum sensitivity
-            setInterval(checkProximityAndMove, 16); // ~60fps
+            buttonsContainer.addEventListener('touchmove', function(e) {
+                if (!isTouching) return;
+                e.preventDefault();
+                
+                const touch = e.touches[0];
+                const rect = buttonsContainer.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+                
+                // Calculate distance moved
+                const moveX = touchX - lastX;
+                const moveY = touchY - lastY;
+                const moveDistance = Math.sqrt(moveX * moveX + moveY * moveY);
+                
+                // If finger moved significantly, check if it's near button
+                if (moveDistance > 5) {
+                    const btnCenterX = currentX + btnWidth/2;
+                    const btnCenterY = currentY + btnHeight/2;
+                    
+                    const distanceToButton = Math.sqrt(
+                        Math.pow(touchX - btnCenterX, 2) + 
+                        Math.pow(touchY - btnCenterY, 2)
+                    );
+                    
+                    // Move if finger gets within 80px
+                    if (distanceToButton < 80) {
+                        moveNoButton(touchX, touchY);
+                    }
+                }
+                
+                lastX = touchX;
+                lastY = touchY;
+            });
             
-            // YES button click
-            yesBtn.addEventListener('click', function() {
+            buttonsContainer.addEventListener('touchend', function() {
+                isTouching = false;
+            });
+            
+            // Move on click attempt (desktop)
+            noBtn.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                const rect = buttonsContainer.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                moveNoButton(x, y);
+                
+                // Move again after a short delay
+                setTimeout(() => moveNoButton(x, y), 100);
+            });
+            
+            // ===== YES BUTTON FIX =====
+            // Use both click and touch events for maximum compatibility
+            yesBtn.addEventListener('click', handleYesClick);
+            yesBtn.addEventListener('touchend', handleYesClick);
+            
+            function handleYesClick(e) {
+                // Prevent default for touch events
+                if (e.type === 'touchend') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                
                 // Update YES button
                 yesBtn.textContent = 'YAY! 💖';
                 yesBtn.style.background = '#ff4d7e';
-                yesBtn.style.transform = 'translateY(-50%) scale(1.1)';
+                yesBtn.style.transform = 'translateY(-50%) scale(1.05)';
                 
                 // Update messages
                 comment.textContent = '';
@@ -318,25 +435,26 @@
                 noBtn.style.opacity = '0.6';
                 noBtn.style.cursor = 'default';
                 
-                // Stop the continuous checking
-                clearInterval(window.moveInterval);
+                // Remove event listeners to prevent multiple clicks
+                yesBtn.removeEventListener('click', handleYesClick);
+                yesBtn.removeEventListener('touchend', handleYesClick);
                 
                 // Create celebration
                 createHearts();
-            });
+            }
             
             // Create falling hearts celebration
             function createHearts() {
                 const colors = ['#ff4d7e', '#ff6b8b', '#ff9a9e', '#fad0c4'];
                 
-                for(let i = 0; i < 25; i++) {
+                for(let i = 0; i < 20; i++) {
                     setTimeout(() => {
                         const heart = document.createElement('div');
                         heart.innerHTML = '❤️';
                         heart.style.position = 'fixed';
                         heart.style.left = Math.random() * 100 + 'vw';
                         heart.style.top = '-50px';
-                        heart.style.fontSize = (Math.random() * 30 + 20) + 'px';
+                        heart.style.fontSize = (Math.random() * 25 + 15) + 'px';
                         heart.style.color = colors[Math.floor(Math.random() * colors.length)];
                         heart.style.zIndex = '9999';
                         heart.style.pointerEvents = 'none';
@@ -345,27 +463,27 @@
                         
                         // Animate falling
                         setTimeout(() => {
-                            heart.style.transition = 'all 1.5s cubic-bezier(0.1, 0.8, 0.3, 1)';
+                            heart.style.transition = 'all 2s ease-in-out';
                             heart.style.top = '100vh';
                             heart.style.opacity = '0';
-                            heart.style.transform = `rotate(${Math.random() * 720}deg) scale(${0.5 + Math.random()})`;
+                            heart.style.transform = `rotate(${Math.random() * 360}deg) scale(${0.5 + Math.random()})`;
                         }, 10);
                         
                         // Remove after animation
                         setTimeout(() => {
                             if(heart.parentNode) document.body.removeChild(heart);
-                        }, 1600);
-                    }, i * 70); // Fast hearts
+                        }, 2100);
+                    }, i * 100);
                 }
             }
             
-            // Toggle sensitivity indicator with 's' key (for debugging)
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 's' || e.key === 'S') {
-                    showSensitivity = !showSensitivity;
-                    sensitivityIndicator.style.display = showSensitivity ? 'block' : 'none';
-                }
-            });
+            // Initialize dimensions
+            updateDimensions();
+            
+            // Add a mobile-specific message
+            if (isMobile) {
+                comment.textContent = '"No" is very shy on mobile! Try to catch it! 😉';
+            }
         });
     </script>
 </body>
